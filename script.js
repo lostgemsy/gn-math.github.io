@@ -4,13 +4,7 @@ let zoneFrame = document.getElementById('zoneFrame');
 const searchBar = document.getElementById('searchBar');
 const sortOptions = document.getElementById('sortOptions');
 // https://www.jsdelivr.com/tools/purge
-const zonesurls = [
-    "https://cdn.jsdelivr.net/%67%68/%67%6e%2d%6d%61%74%68/%61%73%73%65%74%73@%6d%61%69%6e/%7a%6f%6e%65%73%2e%6a%73%6f%6e",
-    "https://cdn.jsdelivr.net/gh/lostgemsy/assets@latest/zones.json",
-    "https://cdn.jsdelivr.net/gh/lostgemsy/assets@master/zones.json",
-    "https://cdn.jsdelivr.net/gh/lostgemsy/assets/zones.json"
-];
-let zonesURL = zonesurls[Math.floor(Math.random() * zonesurls.length)];
+const zonesURL = "https://cdn.jsdelivr.net/gh/lostgemsy/gn-math.github.io@main/zones.json";
 const coverURL = "https://cdn.jsdelivr.net/gh/lostgemsy/covers@main";
 const htmlURL = "https://cdn.jsdelivr.net/gh/lostgemsy/html@main";
 let zones = [];
@@ -18,37 +12,22 @@ let popularityData = {};
 const featuredContainer = document.getElementById('featuredZones');
 async function listZones() {
     try {
-      let sharesponse;
-      let shajson;
-      let sha;
+        let response;
         try {
-          sharesponse = await fetch("https://api.github.com/repos/lostgemsy/assets/commits?t="+Date.now());
-        } catch (error) {}
-        if (sharesponse && sharesponse.status === 200) {
-          try {
-            shajson = await sharesponse.json();
-            sha = shajson[0]['sha'];
-            if (sha) {
-                zonesURL = `https://cdn.jsdelivr.net/gh/lostgemsy/assets@${sha}/zones.json`;
-            }
-          } catch (error) {
-            try {
-                let secondarysharesponse = await fetch("https://raw.githubusercontent.com/gn-math/xml/refs/heads/main/sha.txt?t="+Date.now());
-                if (secondarysharesponse && secondarysharesponse.status === 200) {
-                    sha = (await secondarysharesponse.text()).trim();
-                    if (sha) {
-                        zonesURL = `https://cdn.jsdelivr.net/gh/lostgemsy/assets@${sha}/zones.json`;
-                    }
-                }
-            } catch(error) {}
-          }
+            response = await fetch(zonesURL + "?t=" + Date.now(), { cache: "no-store" });
+            if (!response.ok) throw new Error("jsDelivr returned " + response.status);
+        } catch (cdnError) {
+            response = await fetch("https://raw.githubusercontent.com/lostgemsy/gn-math.github.io/main/zones.json?t=" + Date.now(), { cache: "no-store" });
+            if (!response.ok) throw new Error("GitHub fallback returned " + response.status);
         }
-        const response = await fetch(zonesURL+"?t="+Date.now());
+
         const json = await response.json();
+        if (!Array.isArray(json) || json.length === 0) throw new Error("zones.json is empty or invalid");
         zones = json;
-        zones[0].featured = true; // always gonna be the discord
+        if (zones[0]) zones[0].featured = true;
         await fetchPopularity();
         sortZones();
+
         const search = new URLSearchParams(window.location.search);
         const id = search.get('id');
         const embed = window.location.hash.includes("embed");
@@ -60,7 +39,7 @@ async function listZones() {
                         window.open(zone.url, "_blank");
                     } else {
                         const url = zone.url.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
-                        fetch(url+"?t="+Date.now()).then(response => response.text()).then(html => {
+                        fetch(url + "?t=" + Date.now()).then(response => response.text()).then(html => {
                             document.documentElement.innerHTML = html;
                             const popup = document.createElement("div");
                             popup.style.position = "fixed";
@@ -73,9 +52,7 @@ async function listZones() {
                             popup.style.borderRadius = "5px";
                             popup.style.boxShadow = "0px 0px 10px rgba(0,0,0,0.1)";
                             popup.style.fontFamily = "Arial, sans-serif";
-                            
-                            popup.innerHTML = `Play more games at <a href="https://lostgemsy.github.io" target="_blank" style="color:#004085; font-weight:bold;">https://lostgemsy.github.io</a>!`;
-                            
+                            popup.innerHTML = `Play more games at <a href="https://lostgemsy.github.io" target="_blank" rel="noopener noreferrer" style="color:#004085; font-weight:bold;">https://lostgemsy.github.io</a>!`;
                             const closeBtn = document.createElement("button");
                             closeBtn.innerText = "✖";
                             closeBtn.style.marginLeft = "10px";
@@ -84,17 +61,13 @@ async function listZones() {
                             closeBtn.style.cursor = "pointer";
                             closeBtn.style.color = "#004085";
                             closeBtn.style.fontWeight = "bold";
-                            
                             closeBtn.onclick = () => popup.remove();
                             popup.appendChild(closeBtn);
                             document.body.appendChild(popup);
                             document.documentElement.querySelectorAll('script').forEach(oldScript => {
                                 const newScript = document.createElement('script');
-                                if (oldScript.src) {
-                                    newScript.src = oldScript.src;
-                                } else {
-                                    newScript.textContent = oldScript.textContent;
-                                }
+                                if (oldScript.src) newScript.src = oldScript.src;
+                                else newScript.textContent = oldScript.textContent;
                                 document.body.appendChild(newScript);
                             });
                         }).catch(error => alert("Failed to load zone: " + error));
@@ -105,8 +78,8 @@ async function listZones() {
             }
         }
     } catch (error) {
-        console.error(error);
-        container.innerHTML = `Error loading zones: ${error}`;
+        console.error("Could not load zones:", error);
+        container.innerHTML = "Error loading zones: " + error.message;
     }
 }
 async function fetchPopularity() {
