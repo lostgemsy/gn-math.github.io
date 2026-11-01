@@ -4,7 +4,7 @@ let zoneFrame = document.getElementById('zoneFrame');
 const searchBar = document.getElementById('searchBar');
 const sortOptions = document.getElementById('sortOptions');
 // https://www.jsdelivr.com/tools/purge
-const zonesURL = "https://cdn.jsdelivr.net/gh/lostgemsy/gn-math.github.io@main/zones.json";
+const zonesURL = "https://cdn.jsdelivr.net/gh/lostgemsy/assets@main/zones.json";
 const coverURL = "https://cdn.jsdelivr.net/gh/lostgemsy/covers@main";
 const htmlURL = "https://cdn.jsdelivr.net/gh/lostgemsy/html@main";
 let zones = [];
@@ -17,7 +17,7 @@ async function listZones() {
             response = await fetch(zonesURL + "?t=" + Date.now(), { cache: "no-store" });
             if (!response.ok) throw new Error("jsDelivr returned " + response.status);
         } catch (cdnError) {
-            response = await fetch("https://raw.githubusercontent.com/lostgemsy/gn-math.github.io/main/zones.json?t=" + Date.now(), { cache: "no-store" });
+            response = await fetch("https://raw.githubusercontent.com/lostgemsy/assets/main/zones.json?t=" + Date.now(), { cache: "no-store" });
             if (!response.ok) throw new Error("GitHub fallback returned " + response.status);
         }
 
